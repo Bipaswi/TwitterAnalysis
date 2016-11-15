@@ -1,0 +1,183 @@
+<meta charset="utf-8">
+<style>
+
+<head>
+
+
+    <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://getbootstrap.com/examples/justified-nav/justified-nav.css" rel="stylesheet">
+
+    <style>
+    /*http://code.tutsplus.com/tutorials/building-a-multi-line-chart-using-d3js-part-2--cms-22973*/
+
+        .axis path {
+            fill: none;
+            stroke: #777;
+            shape-rendering: crispEdges;
+        }
+        .axis text {
+            font-family: Lato;
+            font-size: 13px;
+        }
+        .legend {
+        font-size: 14px;
+        font-weight: bold;
+        }
+        .text {
+            font-size: helvetica;
+            font-color: ;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="jumbotron">
+
+            <svg id="visualisation" width="1000" height="500"></svg>
+            <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+            <script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+            <script>
+
+var convert = function (entry) {
+    return [
+        {
+            "type" : "tweet",
+            "count" : entry.tweet,
+            "time" : entry.index.start_time
+        },
+        {
+            "type" : "retweet",
+            "count" : entry.retweet,
+            "time" : entry.index.start_time
+        },
+        {
+            "type" : "reply",
+            "count" : entry.reply,
+            "time" : entry.index.start_time
+        }
+    ]
+}
+
+$.getJSON( "tweet_time.json", function( data ) {
+
+        data = data.map(convert).reduce(function(a,b) {
+            return a.concat(b);
+        })
+        InitChart(data);
+});
+
+function InitChart(data) {
+  
+                    var dataGroup = d3.nest()
+                        .key(function(d) {return d.type;})
+                        .entries(data);
+
+                    //alert(JSON.stringify(dataGroup));
+                    var color = d3.scale.category10();
+                    var vis = d3.select("#visualisation"),
+                        WIDTH = 1000,
+                        HEIGHT = 500,
+                        MARGINS = {
+                            top: 50,
+                            right: 20,
+                            bottom: 50,
+                            left: 50
+                        },
+                        lSpace = WIDTH/dataGroup.length;
+                        xScale = d3.scale.linear().range([MARGINS.left, WIDTH - MARGINS.right]).domain([d3.min(data, function(d) {
+                            return d.time;
+                        }), d3.max(data, function(d) {
+                            return d.time;
+                        })]),
+                        yScale = d3.scale.linear().range([HEIGHT - MARGINS.top, MARGINS.bottom]).domain([d3.min(data, function(d) {
+                            return d.count;
+                        }), d3.max(data, function(d) {
+                            return d.count;
+                        })]),
+                        xAxis = d3.svg.axis().scale(xScale)
+                        .orient("bottom").ticks(10)
+                        .tickFormat(function(d) { return d3.time.format('%b %d')(new Date(d)); })
+                        //.tickFormat(d3.time.format("%Y-%m-%d"));
+                        yAxis = d3.svg.axis()
+                        .scale(yScale)
+                        .orient("left");
+                    
+                    vis.append("svg:g")
+                        .attr("class", "x axis")
+                        .attr("transform", "translate(0," + (HEIGHT - MARGINS.bottom) + ")")
+                        .call(xAxis);
+                    vis.append("svg:g")
+                        .attr("class", "y axis")
+                        .attr("transform", "translate(" + (MARGINS.left) + ",0)")
+                        .call(yAxis);
+                        
+                    var lineGen = d3.svg.line()
+                        .x(function(d) {
+                            return xScale(d.time);
+                        })
+                        .y(function(d) {
+                            return yScale(d.count);
+                        })
+                        .interpolate("basis");
+                    dataGroup.forEach(function(d,i) {
+                        vis.append('svg:path')
+                        .attr('d', lineGen(d.values))
+                        .attr('stroke', function(d,j) {
+                            console.log(i);
+                            if (i == 0) {
+                                return "hsl(180, 68%, 42%)";
+                            }
+                            else if (i == 1){
+                                return "hsl(360,68%,42%)";
+                            }
+                            else {
+                                return "hsl(50,68%,42%)";
+                            }
+                        })
+                                //  return "hsl(" + function(d){ 
+                                //     if (d.key == "tweet")
+                                //         {"181,100%,50%)"}
+                                //     else if(d.key == "retweet"){
+                                //         "60,100%,50%)"
+                                //     }
+                                //     else{
+                                //         "0,68%,42%)"
+                                //     }
+                                // };
+
+                  
+                        .attr('stroke-width', 2)
+                        .attr('id', 'line_'+d.key)
+                        .attr('fill', 'none');
+                        vis.append("text")
+                            .attr("x", (lSpace/2)+i*lSpace)
+                            .attr("y", HEIGHT)
+                            .style("fill", "blue")
+                            .attr("class","legend")
+                            .on('click',function(){
+                                var active   = d.active ? false : true;
+                                var opacity = active ? 0 : 1;
+                                d3.select("#line_" + d.key).style("opacity", opacity);
+                                d.active = active;
+                            })
+                            .text(d.key);
+                    });
+                         
+           
+                }
+           
+            </script>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+
+

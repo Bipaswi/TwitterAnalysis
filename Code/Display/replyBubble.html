@@ -1,0 +1,89 @@
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <style>
+    
+    div.tooltip {
+      line-height: 1;
+      font-weight: bold;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      border-radius: 2px;
+    }
+    </style>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+</head>
+<body>
+    <section id="chart"></section>
+    
+    <script>
+        (function () {
+            var json,
+                color    = d3.scale.category20b();
+                
+            $.getJSON('replies_per_user.json', function( jsonData ) {
+                json = jsonData;
+                        
+                var diameter = 600;
+
+                var div = d3.select("body").append("div")   
+                    .attr("class", "tooltip")               
+                    .style("opacity", 0);
+                        
+                var svg = d3.select('#chart').append('svg')
+                   .attr('width', diameter)
+                   .attr('height', diameter)
+                   .append("g"); 
+
+
+                var bubble = d3.layout.pack()
+                   .size([diameter, diameter])
+                   .padding(3)   
+                   .value(function(d) {return d.size;});
+
+                var nodes = bubble.nodes(processData(json))
+                    .filter(function (d) { return !d.children; });
+            
+
+                var vis = svg.selectAll('circle')
+                    .data(nodes);
+
+                vis.enter().append('circle')
+                    .attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')'; })
+                    .attr('r', function (d) { return d.r; })
+                    .style("fill", function(d) { return color(d.size);})
+                    .on("mouseover", function(d){
+                        div.transition()        
+                           .duration(200)      
+                           .style("opacity", .9);       
+                        div.html("<strong>" + "User: " + d.user + "</strong> <span style='color:red'>" + "Replies: "+ d.size + "</span>")
+                           .style("left", (d.x) + "px")     
+                           .style("top", (d.y - 28) + "px"); 
+                    })
+                    .on("mouseout", function(d) {       
+                        div.transition()        
+                           .duration(500)      
+                           .style("opacity", 0);
+                    })
+                ;
+
+                function processData(data) {
+                            
+                    var replies = [];
+
+                    $.each(data, function(i, item){
+                        replies.push({user: item.index,                                        
+                                       size: item["0"]
+                        })
+                    });
+                    return { children: replies };
+
+                }        
+            });              
+        })();
+    </script>
+</body>
+</html>
+
